@@ -8,7 +8,7 @@ const validationSchema = object({
   profisao: string(),
 });
 
-const validarPessoa = (pessoa: any, nome: string) => {
+const validatePerson = (pessoa: any, nome: string) => {
   try {
     validationSchema.validateSync(pessoa);
     console.log(`${nome} é válido.`);
@@ -43,9 +43,9 @@ function main() {
   console.log(isSamePerson1);
   console.log(isSamePerson2);
 
-  validarPessoa(pessoa1, 'Pessoa 1');
-  validarPessoa(pessoa2, 'Pessoa 2');
-  validarPessoa(pessoa3, 'Pessoa 3');
+  validatePerson(pessoa1, 'Pessoa 1');
+  validatePerson(pessoa2, 'Pessoa 2');
+  validatePerson(pessoa3, 'Pessoa 3');
 }
 
 main();
