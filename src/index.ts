@@ -9,6 +9,7 @@ const validationSchema = object({
 });
 
 const validatePerson = (pessoa: any, nome: string) => {
+
   try {
     validationSchema.validateSync(pessoa);
     console.log(`${nome} é válido.`);
@@ -37,11 +38,20 @@ function main() {
     idade: -10,
   };
 
+  const Lucas = {
+  nome: 'Lucas Gadbem',
+  idade: 21,
+  curso: 'Engenharia de computação',
+  documento: '01674432321',
+};
+
   const isSamePerson1 = CompareProperties(pessoa1, pessoa2);
   const isSamePerson2 = CompareProperties(pessoa1, pessoa3);
+  const isSamePerson3 = CompareProperties(pessoa1, Lucas);
 
   console.log(isSamePerson1);
   console.log(isSamePerson2);
+  console.log(isSamePerson3);
 
   validatePerson(pessoa1, 'Pessoa 1');
   validatePerson(pessoa2, 'Pessoa 2');
