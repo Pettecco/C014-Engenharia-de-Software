@@ -1,4 +1,4 @@
-# Monorepo: C14-Engenharia-de-Software
+# C14-Engenharia-de-Software
 
 Este repositório agora está organizado como um monorepo, contendo múltiplos projetos relacionados à engenharia de software. Cada projeto é gerenciado em seu próprio pacote para melhor manutenção e escalabilidade.
 
@@ -30,7 +30,3 @@ packages/
 ---
 
 Sinta-se à vontade para explorar cada pacote para mais detalhes e instruções.
-
-```
-
-```
