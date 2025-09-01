@@ -7,6 +7,7 @@ Este repositório agora está organizado como um monorepo, contendo múltiplos p
 ```
 packages/
   Gerenciamento_de_Dependencias/
+  Payment_Unit_Test/
   Testes_Unitarios/
 ```
 
