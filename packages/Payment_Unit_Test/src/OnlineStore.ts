@@ -1,12 +1,15 @@
-import { PaymentGateway } from './PaymentGateway';
+import { PaymentGatewayService } from './services/PaymentGatewayService';
+import { NotificationService } from './services/NotificationService';
 import { CardSchema } from './utils/ValidateCard';
 
 export class OnlineStore {
   private cart: number[] = [];
-  private gateway: PaymentGateway;
+  private gateway: PaymentGatewayService;
+  private notificationService?: NotificationService;
 
-  constructor(gateway: PaymentGateway) {
+  constructor(gateway: PaymentGatewayService, notificationService?: NotificationService) {
     this.gateway = gateway;
+    this.notificationService = notificationService;
   }
 
   addProduct(price: number): void {
@@ -43,7 +46,7 @@ export class OnlineStore {
     return total - total * 0.15;
   }
 
-  completePurchase(card: string): string {
+  async completePurchase(card: string, customerEmail: string): Promise<string> {
     const cardValidation = CardSchema.safeParse(card);
 
     if (!cardValidation.success) {
@@ -55,7 +58,18 @@ export class OnlineStore {
 
     if (success) {
       this.clearCart();
+      if (this.notificationService) {
+        await this.notificationService.sendPurchaseConfirmation(
+          customerEmail,
+          total,
+          this.cart.length,
+        );
+      }
       return 'Purchase approved';
+    } else {
+      if (this.notificationService) {
+        await this.notificationService.sendPaymentFailure(customerEmail, total, 'Payment declined');
+      }
     }
     return 'Payment failed';
   }

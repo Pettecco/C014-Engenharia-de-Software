@@ -1,3 +1,3 @@
-export interface PaymentGateway {
+export interface PaymentGatewayService {
   charge(amount: number, card: string): boolean;
 }
