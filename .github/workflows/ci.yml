@@ -33,3 +33,28 @@ jobs:
         with:
           name: test-report
           path: packages/Payment_Unit_Test/coverage/**
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    defaults:
+      run:
+        working-directory: packages/Payment_Unit_Test
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Instalar dependências
+        run: npm install
+      - name: Empacotar (build/compile)
+        run: npm run build
+
+      - name: Upload pacote buildado
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-package
+          path: packages/Payment_Unit_Test/dist/
