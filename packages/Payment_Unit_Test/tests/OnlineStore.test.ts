@@ -1,13 +1,19 @@
 import { OnlineStore } from '../src/OnlineStore';
-import { PaymentGateway } from '../src/PaymentGateway';
+import { PaymentGatewayService } from '../src/services/PaymentGatewayService';
+import { NotificationService } from '../src/services/NotificationService';
 
 describe('OnlineStore - Testing methods', () => {
-  let mockGateway: jest.Mocked<PaymentGateway>;
+  let mockGateway: jest.Mocked<PaymentGatewayService>;
+  let mockNotification: jest.Mocked<NotificationService>;
   let store: OnlineStore;
 
   // Fixture
   beforeEach(() => {
     mockGateway = { charge: jest.fn() };
+    mockNotification = {
+      sendPaymentFailure: jest.fn(),
+      sendPurchaseConfirmation: jest.fn(),
+    };
     store = new OnlineStore(mockGateway);
   });
 
@@ -64,35 +70,119 @@ describe('OnlineStore - Testing methods', () => {
     expect(store.calculateDiscount()).toBe(297.5);
   });
 
-  test('invalid card when trying to purchase with a invalid card', () => {
-    expect(() => store.completePurchase('123abc')).toThrow('Invalid card');
+  test('invalid card when trying to purchase with a invalid card', async () => {
+    await expect(store.completePurchase('123abc', 'test@example.com')).rejects.toThrow(
+      'Invalid card',
+    );
   });
 
-  test('completePurchase approves purchase when mock returns true', () => {
+  test('completePurchase approves purchase when mock returns true', async () => {
     store.addProduct(200);
     mockGateway.charge.mockReturnValue(true);
 
-    const result = store.completePurchase('1111111111111111');
+    const result = await store.completePurchase('1111111111111111', 'test@example.com');
 
     expect(result).toBe('Purchase approved');
     expect(mockGateway.charge).toHaveBeenCalledWith(200, '1111111111111111');
   });
 
-  test('completePurchase fails purchase when mock returns false', () => {
+  test('completePurchase fails purchase when mock returns false', async () => {
     store.addProduct(200);
     mockGateway.charge.mockReturnValue(false);
 
-    const result = store.completePurchase('2222222222222222');
+    const result = await store.completePurchase('2222222222222222', 'test@example.com');
 
     expect(result).toBe('Payment failed');
     expect(mockGateway.charge).toHaveBeenCalledTimes(1);
   });
 
-  test('Clean cart after sucessfull payment', () => {
+  test('Clean cart after sucessfull payment', async () => {
     store.addProduct(100);
     mockGateway.charge.mockReturnValue(true);
-    store.completePurchase('4444444444444444');
+    await store.completePurchase('4444444444444444', 'test@example.com');
 
     expect(store.calculateTotal()).toBe(0);
+  });
+
+  test('sends purchase confirmation when payment succeeds with notification service', async () => {
+    store = new OnlineStore(mockGateway, mockNotification);
+    store.addProduct(150);
+    mockGateway.charge.mockReturnValue(true);
+    mockNotification.sendPurchaseConfirmation.mockResolvedValue(true);
+
+    const result = await store.completePurchase('1111111111111111', 'customer@example.com');
+
+    expect(result).toBe('Purchase approved');
+    expect(mockNotification.sendPurchaseConfirmation).toHaveBeenCalledWith(
+      'customer@example.com',
+      150,
+      expect.any(Number),
+    );
+  });
+
+  test('sends payment failure notification when payment fails with notification service', async () => {
+    store = new OnlineStore(mockGateway, mockNotification);
+    store.addProduct(200);
+    mockGateway.charge.mockReturnValue(false);
+    mockNotification.sendPaymentFailure.mockResolvedValue(true);
+
+    const result = await store.completePurchase('2222222222222222', 'customer@example.com');
+
+    expect(result).toBe('Payment failed');
+    expect(mockNotification.sendPaymentFailure).toHaveBeenCalledWith(
+      'customer@example.com',
+      200,
+      'Payment declined',
+    );
+  });
+
+  test('works without notification service', async () => {
+    store.addProduct(100);
+    mockGateway.charge.mockReturnValue(true);
+
+    const result = await store.completePurchase('3333333333333333', 'test@example.com');
+
+    expect(result).toBe('Purchase approved');
+    expect(store.calculateTotal()).toBe(0);
+  });
+
+  test('notification failure does not break successful purchase', async () => {
+    store = new OnlineStore(mockGateway, mockNotification);
+    store.addProduct(100);
+    mockGateway.charge.mockReturnValue(true);
+    mockNotification.sendPurchaseConfirmation.mockResolvedValue(false);
+
+    const result = await store.completePurchase('4444444444444444', 'customer@example.com');
+
+    expect(result).toBe('Purchase approved');
+    expect(store.calculateTotal()).toBe(0);
+  });
+
+  test('multiple products calculate correct total for notification', async () => {
+    store = new OnlineStore(mockGateway, mockNotification);
+    store.addProduct(50);
+    store.addProduct(75);
+    store.addProduct(25);
+    mockGateway.charge.mockReturnValue(true);
+    mockNotification.sendPurchaseConfirmation.mockResolvedValue(true);
+
+    await store.completePurchase('5555555555555555', 'multi@example.com');
+
+    expect(mockNotification.sendPurchaseConfirmation).toHaveBeenCalledWith(
+      'multi@example.com',
+      150,
+      expect.any(Number),
+    );
+  });
+
+  test('notification service not called when payment gateway fails', async () => {
+    store = new OnlineStore(mockGateway, mockNotification);
+    store.addProduct(100);
+    mockGateway.charge.mockReturnValue(false);
+
+    await store.completePurchase('6666666666666666', 'customer@example.com');
+
+    expect(mockNotification.sendPurchaseConfirmation).not.toHaveBeenCalled();
+    expect(mockNotification.sendPaymentFailure).toHaveBeenCalledTimes(1);
   });
 });
