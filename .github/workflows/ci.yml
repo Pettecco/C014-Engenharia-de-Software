@@ -58,3 +58,27 @@ jobs:
         with:
           name: build-package
           path: packages/Payment_Unit_Test/dist/
+
+  email:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/Payment_Unit_Test
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Enviar e-mail
+        run: node scripts/sendEmail.js
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
